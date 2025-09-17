@@ -8,7 +8,7 @@
 
 **A powerful AI-powered SQL agent that enables natural language querying across multiple database types with enterprise-grade security and performance monitoring.**
 
-[Features](#features) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Security](#security) • [Contributing](#contributing)
+[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#️-architecture) • [Security](#-security) • [Contributing](#-contributing)
 
 </div>
 
