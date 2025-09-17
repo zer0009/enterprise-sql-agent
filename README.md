@@ -1,4 +1,4 @@
-# Universal SQL Agent
+# Enterprise SQL Agent
 
 <div align="center">
 
@@ -16,7 +16,7 @@
 
 ## 🚀 Overview
 
-The Universal SQL Agent is an advanced AI-powered tool that transforms natural language questions into optimized SQL queries across multiple database platforms. Built with enterprise-grade security, comprehensive error recovery, and intelligent performance monitoring, it provides a seamless interface for data exploration and analysis.
+The Enterprise SQL Agent is an advanced AI-powered tool that transforms natural language questions into optimized SQL queries across multiple database platforms. Built with enterprise-grade security, comprehensive error recovery, and intelligent performance monitoring, it provides a seamless interface for data exploration and analysis.
 
 ### Key Highlights
 
@@ -77,8 +77,8 @@ The Universal SQL Agent is an advanced AI-powered tool that transforms natural l
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd new_agent
+   git clone https://github.com/zer0009/enterprise-sql-agent.git
+   cd enterprise-sql-agent
    ```
 
 2. **Install dependencies**
@@ -136,7 +136,7 @@ python src/main.py
 ```
 
 ```
-🎯 Universal SQL Agent - Interactive Mode
+🎯 Enterprise SQL Agent - Interactive Mode
 ============================================================
 🤔 Ask a question: Show me all customers from New York
 🤔 Ask a question: What are the top 10 products by sales?
@@ -166,11 +166,11 @@ python src/main.py
 ### Project Structure
 
 ```
-new_agent/
+enterprise-sql-agent/
 ├── src/
 │   ├── main.py                    # Application entry point
 │   ├── agents/
-│   │   ├── sql_agent.py          # Core UniversalSQLAgent class
+│   │   ├── sql_agent.py          # Core EnterpriseSQLAgent class
 │   │   ├── prompt_manager.py     # Prompt template management
 │   │   └── response_formatter.py # Response formatting and parsing
 │   ├── config/
@@ -198,7 +198,7 @@ new_agent/
 
 ### Core Components
 
-#### 🧠 **UniversalSQLAgent**
+#### 🧠 **EnterpriseSQLAgent**
 The main agent class that orchestrates all functionality:
 - Database connection management
 - LLM integration and configuration
@@ -420,7 +420,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: Check this README and inline code documentation
 - **Issues**: Report bugs and request features via GitHub Issues
 - **Discussions**: Join community discussions for questions and ideas
-- **Security**: Report security vulnerabilities privately via security@example.com
+- **Security**: Report security vulnerabilities privately via GitHub Issues
 
 ## 🙏 Acknowledgments
 
@@ -436,6 +436,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ for the data community**
 
-[⭐ Star this repo](https://github.com/your-repo) • [🐛 Report a bug](https://github.com/your-repo/issues) • [💡 Request a feature](https://github.com/your-repo/issues)
+[⭐ Star this repo](https://github.com/zer0009/enterprise-sql-agent) • [🐛 Report a bug](https://github.com/zer0009/enterprise-sql-agent/issues) • [💡 Request a feature](https://github.com/zer0009/enterprise-sql-agent/issues)
 
 </div>
