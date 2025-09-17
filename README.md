@@ -4,7 +4,10 @@
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
-![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)
+![Status](https://img.shields.io/badge/Status-Beta%20Testing-yellow.svg)
+![PostgreSQL](https://img.shields.io/badge/Tested%20on-PostgreSQL-blue.svg)
+![AI](https://img.shields.io/badge/AI-Powered-orange.svg)
+![Security](https://img.shields.io/badge/Security-Enterprise%20Grade-red.svg)
 
 **A powerful AI-powered SQL agent that enables natural language querying across multiple database types with enterprise-grade security and performance monitoring.**
 
@@ -18,6 +21,8 @@
 
 The Enterprise SQL Agent is an advanced AI-powered tool that transforms natural language questions into optimized SQL queries across multiple database platforms. Built with enterprise-grade security, comprehensive error recovery, and intelligent performance monitoring, it provides a seamless interface for data exploration and analysis.
 
+> **⚠️ Beta Status**: This project is currently in beta testing phase. Only PostgreSQL has been fully tested and is production-ready. Other database types are planned for future releases.
+
 ### Key Highlights
 
 - **🔒 Enterprise Security**: Multi-layer SQL injection prevention with 50+ attack pattern detection
@@ -30,12 +35,12 @@ The Enterprise SQL Agent is an advanced AI-powered tool that transforms natural 
 ## ✨ Features
 
 ### 🗄️ **Multi-Database Support**
-- **PostgreSQL** - Full support with advanced features
-- **MySQL** - Optimized for performance and compatibility
-- **SQLite** - Perfect for development and small-scale applications
-- **SQL Server** - Enterprise-grade Microsoft SQL Server support
-- **Oracle** - Comprehensive Oracle Database integration
-- **MongoDB** - NoSQL document database support
+- **PostgreSQL** - ✅ **Tested & Ready** - Full support with advanced features
+- **MySQL** - 🚧 **Planned** - Optimized for performance and compatibility
+- **SQLite** - 🚧 **Planned** - Perfect for development and small-scale applications
+- **SQL Server** - 🚧 **Planned** - Enterprise-grade Microsoft SQL Server support
+- **Oracle** - 🚧 **Planned** - Comprehensive Oracle Database integration
+- **MongoDB** - 🚧 **Planned** - NoSQL document database support
 
 ### 🤖 **AI-Powered Intelligence**
 - **Natural Language Processing** - Convert questions to SQL queries
@@ -70,13 +75,13 @@ The Enterprise SQL Agent is an advanced AI-powered tool that transforms natural 
 ### Prerequisites
 
 - Python 3.8 or higher
-- Database access credentials
+- **PostgreSQL database** (currently the only tested database)
 - AI model API key (Google Gemini or OpenAI)
 
 ### Installation
 
 1. **Clone the repository**
-   ```bash
+```bash
    git clone https://github.com/zer0009/enterprise-sql-agent.git
    cd enterprise-sql-agent
    ```
@@ -88,8 +93,8 @@ The Enterprise SQL Agent is an advanced AI-powered tool that transforms natural 
    ```
 
 3. **Configure environment**
-   ```bash
-   cp env.template .env
+```bash
+cp env.template .env
    # Edit .env with your database and API credentials
    ```
 
@@ -312,14 +317,14 @@ The agent automatically detects industry context and optimizes queries according
 
 ### Database Configuration
 
-| Database | Driver Required | Configuration |
-|----------|----------------|---------------|
-| PostgreSQL | `psycopg2-binary` | Host, Port, Database, User, Password |
-| MySQL | `pymysql` | Host, Port, Database, User, Password |
-| SQLite | Built-in | File path |
-| SQL Server | `pyodbc` | Host, Port, Database, User, Password |
-| Oracle | `cx-Oracle` | Host, Port, SID, User, Password |
-| MongoDB | `pymongo` | Host, Port, Database, User, Password |
+| Database | Status | Driver Required | Configuration |
+|----------|--------|----------------|---------------|
+| PostgreSQL | ✅ **Tested** | `psycopg2-binary` | Host, Port, Database, User, Password |
+| MySQL | 🚧 **Planned** | `pymysql` | Host, Port, Database, User, Password |
+| SQLite | 🚧 **Planned** | Built-in | File path |
+| SQL Server | 🚧 **Planned** | `pyodbc` | Host, Port, Database, User, Password |
+| Oracle | 🚧 **Planned** | `cx-Oracle` | Host, Port, SID, User, Password |
+| MongoDB | 🚧 **Planned** | `pymongo` | Host, Port, Database, User, Password |
 
 ### AI Model Configuration
 
@@ -348,6 +353,37 @@ ENABLE_SECURITY_MONITORING=true
 LOG_SECURITY_EVENTS=true
 SECURITY_LOG_LEVEL=INFO
 ```
+
+## 🧪 Testing Status
+
+### Current Testing Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| **PostgreSQL** | ✅ **Fully Tested** | Production-ready with comprehensive testing |
+| **MySQL** | 🚧 **Planned** | Support planned for next release |
+| **SQLite** | 🚧 **Planned** | Support planned for next release |
+| **SQL Server** | 🚧 **Planned** | Support planned for next release |
+| **Oracle** | 🚧 **Planned** | Support planned for next release |
+| **MongoDB** | 🚧 **Planned** | Support planned for next release |
+| **Security Features** | ✅ **Tested** | Comprehensive security testing completed |
+| **AI Integration** | ✅ **Tested** | Google Gemini and OpenAI integration tested |
+| **Error Recovery** | ✅ **Tested** | Query correction and retry mechanisms tested |
+
+### Beta Testing Notes
+
+- **Current Version**: Beta 1.0
+- **Production Ready**: PostgreSQL only
+- **Testing Environment**: PostgreSQL 13+ with various data types and schemas
+- **Security Testing**: Comprehensive SQL injection prevention tested
+- **Performance Testing**: Query optimization and monitoring validated
+
+### Future Releases
+
+- **v1.1**: MySQL and SQLite support
+- **v1.2**: SQL Server and Oracle support  
+- **v1.3**: MongoDB support and advanced features
+- **v2.0**: Production-ready multi-database support
 
 ## 🚨 Troubleshooting
 
