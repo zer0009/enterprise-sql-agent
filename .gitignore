@@ -1,3 +1,4 @@
 .env
 _pycache_
 vector_store_data
+__pycache__
