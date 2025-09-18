@@ -26,6 +26,15 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
+# Try to import Chroma for vector store support
+try:
+    import chromadb
+    from chromadb.config import Settings
+    CHROMA_AVAILABLE = True
+except ImportError:
+    CHROMA_AVAILABLE = False
+    logger.warning("ChromaDB not available - falling back to pickle cache only")
+
 logger = logging.getLogger(__name__)
 
 
@@ -139,7 +148,8 @@ class SemanticTableSelector:
                  max_tables: int = 8,
                  cache_dir: str = "vector_store_data/table_embeddings",
                  enabled: bool = True,
-                 progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None):
+                 progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
+                 use_chroma: bool = True):
         """
         Initialize the semantic table selector.
 
@@ -157,12 +167,15 @@ class SemanticTableSelector:
         self.cache_dir = cache_dir
         self.enabled = enabled
         self.progress_callback = progress_callback
+        self.use_chroma = use_chroma
 
         # Lazy loading attributes
         self._model = None
         self._table_embeddings = {}
         self._embedding_cache = {}
         self._cache_timestamp = None
+        self._chroma_client = None
+        self._chroma_collection = None
 
         # Progress tracking
         self.indexing_progress = IndexingProgress()
@@ -181,6 +194,10 @@ class SemanticTableSelector:
         # Ensure cache directory exists
         os.makedirs(cache_dir, exist_ok=True)
 
+        # Initialize Chroma client if enabled
+        if enabled and use_chroma and CHROMA_AVAILABLE:
+            self._init_chroma_client()
+
         # Load cached embeddings if available
         if enabled:
             cache_loaded = self._load_embeddings_cache()
@@ -194,6 +211,73 @@ class SemanticTableSelector:
 
         logger.info(f"SemanticTableSelector initialized: enabled={enabled}, "
                    f"model={model_name}, threshold={similarity_threshold}")
+    
+    def _init_chroma_client(self):
+        """Initialize Chroma client and collection."""
+        try:
+            # Use the existing vector_store_data directory
+            chroma_db_path = os.path.dirname(self.cache_dir)  # vector_store_data
+            
+            # Initialize Chroma client
+            self._chroma_client = chromadb.PersistentClient(path=chroma_db_path)
+            
+            # Get or create collection for table embeddings
+            collection_name = "table_embeddings"
+            try:
+                self._chroma_collection = self._chroma_client.get_collection(collection_name)
+                # Check if collection has data
+                count = self._chroma_collection.count()
+                if count > 0:
+                    logger.info(f"✅ Found existing Chroma collection with {count} table embeddings")
+                    # Load embeddings from Chroma
+                    self._load_from_chroma()
+                else:
+                    logger.info("📦 Empty Chroma collection found")
+            except Exception:
+                # Collection doesn't exist, create it
+                self._chroma_collection = self._chroma_client.create_collection(
+                    name=collection_name,
+                    metadata={"description": "Database table embeddings for semantic search"}
+                )
+                logger.info("📦 Created new Chroma collection for table embeddings")
+                
+        except Exception as e:
+            logger.warning(f"Failed to initialize Chroma client: {e}")
+            self._chroma_client = None
+            self._chroma_collection = None
+    
+    def _load_from_chroma(self):
+        """Load existing embeddings from Chroma collection."""
+        if not self._chroma_collection:
+            return False
+            
+        try:
+            # Get all embeddings from the collection
+            results = self._chroma_collection.get(include=['embeddings', 'metadatas', 'documents'])
+            
+            if not results['ids']:
+                return False
+                
+            # Convert to our internal format
+            for i, table_id in enumerate(results['ids']):
+                embedding = np.array(results['embeddings'][i]) if results['embeddings'] else None
+                metadata = results['metadatas'][i] if results['metadatas'] else {}
+                document = results['documents'][i] if results['documents'] else ""
+                
+                if embedding is not None:
+                    self._table_embeddings[table_id] = {
+                        "embedding": embedding,
+                        "text": document,
+                        "columns": metadata.get("columns", []),
+                        "timestamp": datetime.fromisoformat(metadata.get("timestamp", datetime.now().isoformat()))
+                    }
+            
+            logger.info(f"✅ Loaded {len(self._table_embeddings)} embeddings from Chroma")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to load embeddings from Chroma: {e}")
+            return False
     
     @property
     def model(self) -> Optional[SentenceTransformer]:
@@ -309,8 +393,9 @@ class SemanticTableSelector:
         self.indexing_progress.complete(success=True)
         logger.info(f"Successfully built embeddings for {successful_count}/{len(table_info)} tables")
 
-        # Save to disk cache
+        # Save to both Chroma and disk cache
         self._save_embeddings_cache()
+        self._save_to_chroma(table_info)
 
     def build_table_embeddings_async(self, table_info: Dict[str, Any]) -> None:
         """
@@ -454,23 +539,65 @@ class SemanticTableSelector:
         except Exception as e:
             logger.warning(f"Failed to save embeddings cache: {e}")
     
+    def _save_to_chroma(self, table_info: Dict[str, Any]) -> None:
+        """Save embeddings to Chroma collection."""
+        if not self._chroma_collection or not self._table_embeddings:
+            return
+            
+        try:
+            # Prepare data for Chroma
+            ids = []
+            embeddings = []
+            metadatas = []
+            documents = []
+            
+            for table_name, table_data in self._table_embeddings.items():
+                if table_name in table_info:  # Only save newly processed tables
+                    ids.append(table_name)
+                    embeddings.append(table_data["embedding"].tolist())
+                    metadatas.append({
+                        "columns": table_data.get("columns", []),
+                        "timestamp": table_data.get("timestamp", datetime.now()).isoformat(),
+                        "table_name": table_name
+                    })
+                    documents.append(table_data.get("text", ""))
+            
+            if ids:
+                # Use upsert to update existing or insert new
+                self._chroma_collection.upsert(
+                    ids=ids,
+                    embeddings=embeddings,
+                    metadatas=metadatas,
+                    documents=documents
+                )
+                logger.info(f"💾 Saved {len(ids)} table embeddings to Chroma")
+                
+        except Exception as e:
+            logger.warning(f"Failed to save embeddings to Chroma: {e}")
+    
     def _load_embeddings_cache(self) -> bool:
-        """Load embeddings from disk cache."""
+        """Load embeddings from cache (Chroma first, then pickle backup)."""
+        # First try to load from Chroma if available
+        if self._chroma_collection and self._load_from_chroma():
+            return True
+            
+        # Fallback to pickle cache
         try:
             cache_file = os.path.join(self.cache_dir, "table_embeddings.pkl")
             if os.path.exists(cache_file):
-                # Check cache age
+                # Check cache age - be more lenient (30 days)
                 cache_age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(cache_file))
                 
-                # Load cache if it's less than 7 days old (more lenient)
-                max_cache_age = timedelta(days=7)
+                max_cache_age = timedelta(days=30)  # Extended from 7 to 30 days
                 if cache_age < max_cache_age:
                     with open(cache_file, 'rb') as f:
-                        self._table_embeddings = pickle.load(f)
-                    logger.info(f"Loaded {len(self._table_embeddings)} table embeddings from cache (age: {cache_age})")
-                    return True
+                        cached_data = pickle.load(f)
+                        if cached_data and len(cached_data) > 0:
+                            self._table_embeddings = cached_data
+                            logger.info(f"📦 Loaded {len(self._table_embeddings)} table embeddings from pickle cache (age: {cache_age.days} days)")
+                            return True
                 else:
-                    logger.info(f"Embeddings cache is too old ({cache_age}), will rebuild")
+                    logger.info(f"🗓️ Pickle cache is too old ({cache_age.days} days), will rebuild")
             return False
         except Exception as e:
             logger.warning(f"Failed to load embeddings cache: {e}")
@@ -484,35 +611,49 @@ class SemanticTableSelector:
             table_names: List of table names to check
 
         Returns:
-            True if cache covers all tables and is recent, False otherwise
+            True if cache covers most tables and is reasonably recent, False otherwise
         """
         if not self._table_embeddings:
             logger.debug("No table embeddings in memory")
             return False
 
-        # Check if all tables are cached
+        # Be more lenient - require 80% coverage instead of 100%
         cached_tables = set(self._table_embeddings.keys())
         required_tables = set(table_names)
-
-        if not required_tables.issubset(cached_tables):
-            missing_tables = required_tables - cached_tables
-            logger.debug(f"Missing tables in cache: {missing_tables}")
+        
+        coverage = len(cached_tables.intersection(required_tables)) / len(required_tables)
+        if coverage < 0.8:  # Require at least 80% coverage
+            missing_count = len(required_tables - cached_tables)
+            logger.debug(f"Cache coverage too low: {coverage:.1%} ({missing_count} missing tables)")
             return False
 
-        # Check cache age (24 hours)
+        # More lenient cache age check (30 days)
         try:
+            # Check Chroma first
+            if self._chroma_collection:
+                try:
+                    count = self._chroma_collection.count()
+                    if count >= len(required_tables) * 0.8:  # 80% coverage
+                        logger.debug(f"Chroma collection has {count} embeddings - sufficient coverage")
+                        return True
+                except Exception:
+                    pass
+            
+            # Fallback to pickle cache age
             cache_file = os.path.join(self.cache_dir, "table_embeddings.pkl")
             if os.path.exists(cache_file):
                 cache_age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(cache_file))
-                is_recent = cache_age < timedelta(days=7)
-                logger.debug(f"Cache age: {cache_age}, is recent: {is_recent}")
+                is_recent = cache_age < timedelta(days=30)  # Extended from 7 to 30 days
+                logger.debug(f"Pickle cache age: {cache_age.days} days, is recent: {is_recent}")
                 return is_recent
             else:
-                logger.debug("Cache file does not exist")
-                return False
+                # If we have embeddings in memory but no file, consider it valid for now
+                logger.debug("No cache file but have embeddings in memory - considering valid")
+                return True
         except Exception as e:
             logger.warning(f"Error checking cache age: {e}")
-            return False
+            # If we have embeddings but can't check age, consider it valid
+            return len(self._table_embeddings) > 0
 
     def get_table_relevance_scores(self, question: str) -> Dict[str, float]:
         """
@@ -786,10 +927,6 @@ def create_semantic_table_selector(force_enabled: bool = None) -> SemanticTableS
         similarity_threshold=similarity_threshold,
         max_tables=max_tables,
         cache_dir=cache_dir,
-        enabled=enabled
+        enabled=enabled,
+        use_chroma=True
     )
-
-
-
-
-
